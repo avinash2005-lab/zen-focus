@@ -9,31 +9,16 @@
         :root {
             --bg: #0f0f12; --surf: #1d1b20; --prim: #d0bcfe;
             --on-prim: #381e72; --sec: #4a4458; --tert: #efb8c8;
-            --text-sub: #938f99;
         }
         body {
             background-color: var(--bg); color: #e6e1e5;
             font-family: 'Segoe UI', system-ui, sans-serif;
             margin: 0; display: flex; flex-direction: column;
-            align-items: center; min-height: 100vh;
-            overflow-x: hidden;
+            align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box;
         }
-
-        .main-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; max-width: 500px; padding: 20px; box-sizing: border-box; flex-grow: 1;
-        }
-
-        .task-input-container { width: 100%; margin-bottom: 10px; display: flex; gap: 10px; }
-        .task-input {
-            background: #2b2930; border: 1px solid #444; color: white;
-            padding: 12px 20px; border-radius: 100px; width: 100%;
-            text-align: center; font-size: 1rem; transition: 0.3s;
-        }
-
         .timer-wrapper {
-            position: relative; width: 320px; height: 320px; margin: 20px 0;
-            display: flex; align-items: center; justify-content: center;
+            position: relative; width: 320px; height: 320px;
+            display: flex; align-items: center; justify-content: center; margin: 20px 0;
         }
         svg { transform: rotate(-90deg); position: absolute; }
         circle { fill: none; stroke-width: 8; stroke-linecap: round; }
@@ -43,214 +28,166 @@
             stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s linear;
         }
         .timer-content { text-align: center; z-index: 1; }
-        .timer-text { font-size: 5.5rem; font-weight: 200; margin: 0; tabular-nums; cursor: pointer; }
-        .status-badge { font-size: 0.8rem; letter-spacing: 2px; color: var(--prim); font-weight: 600; text-transform: uppercase;}
+        .timer-text { font-size: 5.5rem; font-weight: 200; margin: 0; tabular-nums; }
+        .status-badge { font-size: 0.8rem; letter-spacing: 3px; color: var(--prim); font-weight: 600; }
 
-        .controls { display: flex; gap: 15px; margin-top: 20px; align-items: center; }
-        button { border: none; cursor: pointer; border-radius: 100px; transition: 0.2s; font-weight: bold;}
+        .task-input {
+            background: #2b2930; border: 1px solid #444; color: white;
+            padding: 12px 25px; border-radius: 100px; width: 100%; max-width: 300px;
+            text-align: center; margin-bottom: 10px; font-size: 1rem;
+        }
+        .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+        button { border: none; cursor: pointer; border-radius: 100px; font-weight: bold; transition: 0.2s; }
         .btn-play { background: var(--prim); color: var(--on-prim); padding: 18px 50px; font-size: 1.1rem; }
-        .btn-nav { background: var(--sec); color: white; width: 55px; height: 55px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;}
+        .btn-nav { background: var(--sec); color: white; width: 50px; height: 50px; font-size: 1.2rem; display:flex; align-items:center; justify-content:center;}
         
-        .bottom-panel { width: 100%; margin-top: 30px; display: flex; gap: 15px; flex-direction: column; }
         textarea {
-            width: 100%; height: 80px; background: #1c1b20; border: 1px solid #333;
-            color: #ddd; padding: 15px; border-radius: 15px; resize: none; box-sizing: border-box;
+            width: 100%; max-width: 450px; height: 80px; background: #1c1b20; border: 1px solid #333;
+            color: #ddd; padding: 15px; border-radius: 15px; resize: none; box-sizing: border-box; margin-top: 15px;
         }
-
-        .log-list {
-            max-height: 150px; overflow-y: auto; width: 100%;
-            background: rgba(255,255,255,0.03); border-radius: 15px; padding: 10px; box-sizing: border-box;
-        }
-        .log-item { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 8px 10px; border-bottom: 1px solid #333; }
+        .log-container { width: 100%; max-width: 450px; margin-top: 20px; font-size: 0.85rem; }
+        .log-item { display: flex; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid #333; }
 
         #settingsOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); display: none;
-            justify-content: center; align-items: center; z-index: 100;
-            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(10px);
         }
-        .settings-card { background: var(--surf); padding: 30px; border-radius: 28px; width: 320px; position: relative; }
-        .close-x { position: absolute; top: 20px; right: 20px; color: var(--text-sub); font-size: 1.5rem; cursor: pointer; }
-        .field { margin-bottom: 20px; text-align: left; }
-        input[type="number"] { width: 100%; background: #2b2930; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; box-sizing: border-box; }
-        .save-btn { background: var(--prim); color: var(--on-prim); width: 100%; padding: 15px; margin-top: 10px; }
+        .settings-card { background: var(--surf); padding: 30px; border-radius: 28px; width: 300px; position: relative; }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <div class="task-input-container">
-        <input type="text" id="subjectInput" class="task-input" placeholder="Subject Name (e.g. Maths)">
-    </div>
+    <input type="text" id="subjectInput" class="task-input" placeholder="Subject Name (e.g. Physics)">
 
     <div class="timer-wrapper">
         <svg width="300" height="300"><circle class="bg-circle" cx="150" cy="150" r="140"></circle><circle id="progCircle" class="progress-circle" cx="150" cy="150" r="140"></circle></svg>
         <div class="timer-content">
             <div id="sessionDisplay" style="font-size: 0.85rem; color: var(--prim); margin-bottom: 5px;">Session 1</div>
             <div id="status" class="status-badge">READY</div>
-            <h1 class="timer-text" id="timer" onclick="toggleTimer()">00:00</h1>
-            <div class="goal-inside" id="goal-text" style="font-size: 0.9rem; color: var(--text-sub); margin-top: 5px;">Goal: 0%</div>
+            <h1 class="timer-text" id="timer">00:00</h1>
+            <div id="goal-text" style="font-size: 0.9rem; color: #938f99; margin-top: 5px;">Goal: 0%</div>
         </div>
     </div>
 
     <div class="controls">
         <button class="btn-nav" onclick="openSettings()">⚙️</button>
         <button class="btn-play" id="startBtn" onclick="toggleTimer()">START</button>
-        <button class="btn-nav" onclick="toggleLunch()">☕</button>
+        <button class="btn-nav" onclick="toggleLunch()" id="lunchBtn">☕</button>
     </div>
 
-    <div class="bottom-panel">
-        <textarea id="brainDump" placeholder="Quick notes / distracting thoughts..." oninput="saveNotes()"></textarea>
-        <div class="log-list" id="logList"></div>
-    </div>
-</div>
+    <textarea id="brainDump" placeholder="Brain Dump: distractions, ideas, notes..." oninput="localStorage.setItem('notes', this.value)"></textarea>
+    
+    <div class="log-container" id="logList"></div>
 
-<div id="settingsOverlay">
-    <div class="settings-card">
-        <span class="close-x" onclick="closeSettings()">×</span>
-        <h2 style="margin-top:0; font-weight: 400;">Timer Settings</h2>
-        <div class="field"><label>Study Block (min)</label><input type="number" id="studyInput" value="50"></div>
-        <div class="field"><label>Break Block (min)</label><input type="number" id="breakInput" value="10"></div>
-        <div class="field"><label>Daily Goal (hrs)</label><input type="number" id="goalInput" value="10"></div>
-        <button class="save-btn" onclick="saveSettingsAction()">SAVE & START</button>
-        <button onclick="hardReset()" style="background:transparent; color:#ffb4ab; border:1px solid #444; width:100%; padding:10px; margin-top:15px; border-radius:10px;">RESET DAY</button>
+    <div id="settingsOverlay">
+        <div class="settings-card">
+            <span style="position:absolute; top:20px; right:20px; cursor:pointer;" onclick="closeSettings()">×</span>
+            <h2 style="margin-top:0; font-weight:400;">Settings</h2>
+            <div style="margin-bottom:15px;"><label>Study (min)</label><input type="number" id="studyIn" value="50" style="width:100%"></div>
+            <div style="margin-bottom:15px;"><label>Break (min)</label><input type="number" id="breakIn" value="10" style="width:100%"></div>
+            <div style="margin-bottom:15px;"><label>Goal (hrs)</label><input type="number" id="goalIn" value="10" style="width:100%"></div>
+            <button onclick="saveSettings()" style="width:100%; background:var(--prim); padding:12px; border-radius:12px;">SAVE</button>
+            <button onclick="localStorage.clear(); location.reload();" style="width:100%; background:transparent; border:1px solid #444; color:#ffb4ab; margin-top:10px; padding:8px; border-radius:12px;">RESET ALL</button>
+        </div>
     </div>
-</div>
 
 <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+
     let timerId = null, isPaused = true, isStudy = true, isLunch = false;
     let totalStudiedSec = parseInt(localStorage.getItem('studiedSec')) || 0;
-    let completedSessions = parseInt(localStorage.getItem('completedSessions')) || 0;
-    let startTime, baseTimeLeft;
-    let historyLog = JSON.parse(localStorage.getItem('historyLog')) || [];
+    let completedSessions = parseInt(localStorage.getItem('sessions')) || 0;
+    let baseTimeLeft, startTime;
+    let history = JSON.parse(localStorage.getItem('history')) || [];
 
-    const circle = document.getElementById('progCircle');
-    const circumference = 2 * Math.PI * 140;
-
+    function notify(t, b) { if(Notification.permission === "granted") new Notification(t, {body: b}); }
     function playChime() {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(isStudy ? 880 : 440, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+        const ctx = new AudioContext(); const osc = ctx.createOscillator(); const g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
         osc.start(); osc.stop(ctx.currentTime + 0.5);
     }
 
     function updateDisplay() {
-        let timeLeft = baseTimeLeft;
-        if (!isPaused && !isLunch) {
-            timeLeft = baseTimeLeft - Math.floor((Date.now() - startTime) / 1000);
-        }
+        let t = baseTimeLeft;
+        if (!isPaused && !isLunch) t -= Math.floor((Date.now() - startTime) / 1000);
+        if (t <= 0) { playChime(); nextSession(); return; }
 
-        if (timeLeft <= 0) {
-            playChime();
-            nextSession();
-            return;
-        }
-
-        const m = Math.floor(timeLeft / 60);
-        const s = timeLeft % 60;
+        const m = Math.floor(t / 60), s = t % 60;
         const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         document.getElementById('timer').textContent = timeStr;
-        document.title = `${timeStr} - ${isStudy ? 'Focus' : 'Break'}`;
+        document.title = `${timeStr} - ${document.getElementById('subjectInput').value || 'Zen'}`;
 
-        const studyMin = parseInt(document.getElementById('studyInput').value);
-        const maxSec = (isStudy ? studyMin : parseInt(document.getElementById('breakInput').value)) * 60;
-        circle.style.strokeDashoffset = circumference - (timeLeft / maxSec) * circumference;
+        const studyMin = parseInt(document.getElementById('studyIn').value);
+        const goalSec = parseInt(document.getElementById('goalIn').value) * 3600;
+        const currentContrib = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        const total = totalStudiedSec + currentContrib;
 
-        let currentContribution = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - startTime) / 1000) : 0;
-        const total = totalStudiedSec + currentContribution;
-        const goalSec = parseInt(document.getElementById('goalInput').value) * 3600;
-        
+        document.getElementById('progCircle').style.strokeDashoffset = 880 - (t / ((isStudy ? studyMin : parseInt(document.getElementById('breakIn').value)) * 60)) * 880;
         document.getElementById('goal-text').textContent = `Goal: ${Math.min((total/goalSec)*100, 100).toFixed(1)}%`;
-        
-        // Accurate Session Counter Logic
-        const totalSessionsNeeded = Math.ceil(goalSec / (studyMin * 60));
-        const currentSessionDisplay = isStudy ? completedSessions + 1 : completedSessions;
-        document.getElementById('sessionDisplay').textContent = `Session ${Math.min(currentSessionDisplay, totalSessionsNeeded)} of ${totalSessionsNeeded}`;
+        document.getElementById('sessionDisplay').textContent = `Session ${isStudy ? completedSessions + 1 : completedSessions} of ${Math.ceil(goalSec/(studyMin*60))}`;
     }
 
     function toggleTimer() {
+        if(Notification.permission !== "granted") Notification.requestPermission();
         if (isPaused) {
-            if (!baseTimeLeft) baseTimeLeft = document.getElementById('studyInput').value * 60;
-            isPaused = false;
-            startTime = Date.now();
+            isPaused = false; startTime = Date.now();
             document.getElementById('startBtn').textContent = "PAUSE";
-            document.getElementById('status').textContent = isStudy ? "STUDYING" : "BREAK";
-            circle.style.stroke = isStudy ? "var(--prim)" : "var(--tert)";
+            document.getElementById('subjectInput').disabled = true;
             timerId = setInterval(updateDisplay, 1000);
         } else {
-            isPaused = true;
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            if (isStudy) { totalStudiedSec += elapsed; localStorage.setItem('studiedSec', totalStudiedSec); }
-            baseTimeLeft -= elapsed;
-            clearInterval(timerId);
+            isPaused = true; const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            if(isStudy) { totalStudiedSec += elapsed; localStorage.setItem('studiedSec', totalStudiedSec); }
+            baseTimeLeft -= elapsed; clearInterval(timerId);
             document.getElementById('startBtn').textContent = "RESUME";
+            document.getElementById('subjectInput').disabled = false;
         }
     }
 
     function nextSession() {
         const elapsed = isPaused ? 0 : Math.floor((Date.now() - startTime) / 1000);
-        if (isStudy) {
-            totalStudiedSec += elapsed;
-            completedSessions++;
+        if(isStudy) {
+            totalStudiedSec += elapsed; completedSessions++;
             localStorage.setItem('studiedSec', totalStudiedSec);
-            localStorage.setItem('completedSessions', completedSessions);
-            addToLog(document.getElementById('subjectInput').value || "General", parseInt(document.getElementById('studyInput').value));
-        }
-
-        isStudy = !isStudy;
-        baseTimeLeft = (isStudy ? document.getElementById('studyInput').value : document.getElementById('breakInput').value) * 60;
-        startTime = Date.now();
-        updateDisplay();
-    }
-
-    function addToLog(subject, duration) {
-        const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        historyLog.unshift({ subject, duration, time: timeStr });
-        localStorage.setItem('historyLog', JSON.stringify(historyLog));
-        renderLog();
+            localStorage.setItem('sessions', completedSessions);
+            const sub = document.getElementById('subjectInput').value || "General";
+            history.unshift({s: sub, d: document.getElementById('studyIn').value, t: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})});
+            localStorage.setItem('history', JSON.stringify(history));
+            renderLog(); notify("Session Complete", "Time for a break!");
+        } else { notify("Break Over", "Time to focus!"); }
+        isStudy = !isStudy; baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
+        startTime = Date.now(); updateDisplay();
     }
 
     function renderLog() {
-        document.getElementById('logList').innerHTML = historyLog.map(item => `
-            <div class="log-item"><span><b>${item.subject}</b> ${item.time}</span><span>${item.duration}m</span></div>
-        `).join('');
+        document.getElementById('logList').innerHTML = history.map(i => `<div class="log-item"><span><b>${i.s}</b> ${i.t}</span><span>${i.d}m</span></div>`).join('');
     }
 
     function toggleLunch() {
-        isLunch = !isLunch;
-        document.getElementById('status').textContent = isLunch ? "ON BREAK" : (isStudy ? "STUDYING" : "BREAK");
+        isLunch = !isLunch; document.getElementById('lunchBtn').textContent = isLunch ? "🔙" : "☕";
+        document.getElementById('status').textContent = isLunch ? "LUNCH" : (isStudy ? "STUDYING" : "BREAK");
         if(isLunch && !isPaused) toggleTimer();
     }
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
-    
-    function saveSettingsAction() {
-        localStorage.setItem('studyMin', document.getElementById('studyInput').value);
-        localStorage.setItem('breakMin', document.getElementById('breakInput').value);
-        localStorage.setItem('goalHrs', document.getElementById('goalInput').value);
-        baseTimeLeft = document.getElementById('studyInput').value * 60;
-        isPaused = true; clearInterval(timerId);
-        document.getElementById('startBtn').textContent = "START";
-        isStudy = true;
-        updateDisplay();
-        closeSettings();
+    function saveSettings() {
+        localStorage.setItem('studyMin', document.getElementById('studyIn').value);
+        localStorage.setItem('goalHrs', document.getElementById('goalIn').value);
+        baseTimeLeft = document.getElementById('studyIn').value * 60;
+        isPaused = true; clearInterval(timerId); document.getElementById('startBtn').textContent = "START";
+        updateDisplay(); closeSettings();
     }
 
-    function hardReset() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
-    function saveNotes() { localStorage.setItem('brainDump', document.getElementById('brainDump').value); }
+    window.onbeforeunload = (e) => { if(!isPaused) return e.returnValue = "Timer running!"; };
+    window.onkeydown = (e) => { if(e.code === 'Space') { e.preventDefault(); toggleTimer(); } };
 
-    // Init
-    document.getElementById('studyInput').value = localStorage.getItem('studyMin') || 50;
-    document.getElementById('breakInput').value = localStorage.getItem('breakMin') || 10;
-    document.getElementById('goalInput').value = localStorage.getItem('goalHrs') || 10;
-    document.getElementById('brainDump').value = localStorage.getItem('brainDump') || "";
-    baseTimeLeft = document.getElementById('studyInput').value * 60;
-    renderLog();
-    updateDisplay();
+    document.getElementById('studyIn').value = localStorage.getItem('studyMin') || 50;
+    document.getElementById('goalIn').value = localStorage.getItem('goalHrs') || 10;
+    document.getElementById('brainDump').value = localStorage.getItem('notes') || "";
+    baseTimeLeft = document.getElementById('studyIn').value * 60;
+    renderLog(); updateDisplay();
 </script>
 </body>
 </html>
