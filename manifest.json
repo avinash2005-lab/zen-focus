@@ -1,7 +1,6 @@
 {
-  "name": "Zen Focus Study Timer",
+  "name": "Zen Focus Pro",
   "short_name": "ZenFocus",
-  "description": "A battery-efficient Material 3 study timer.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f0f12",
