@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zen Focus v4</title>
+    <title>Zen Focus v5</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -29,15 +29,15 @@
             stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s linear;
         }
         .timer-content { text-align: center; z-index: 1; }
-        .timer-text { font-size: 6rem; font-weight: 200; margin: 0; tabular-nums; }
+        .timer-text { font-size: 6.5rem; font-weight: 200; margin: 0; tabular-nums; }
         .status-badge { font-size: 0.8rem; letter-spacing: 2px; color: var(--prim); font-weight: 600; margin-bottom: 2px;}
         .session-counter { font-size: 0.85rem; color: var(--prim); opacity: 0.8; margin-bottom: 5px; }
         .goal-inside { font-size: 0.9rem; color: #938f99; margin-top: 5px; }
 
         .controls { display: flex; gap: 12px; margin-top: 30px; align-items: center; }
         button { border: none; cursor: pointer; border-radius: 100px; transition: 0.2s; font-weight: bold;}
-        .btn-play { background: var(--prim); color: var(--on-prim); padding: 18px 45px; font-size: 1.1rem; }
-        .btn-nav { background: var(--sec); color: white; width: 50px; height: 50px; font-size: 1.2rem; }
+        .btn-play { background: var(--prim); color: var(--on-prim); padding: 18px 55px; font-size: 1.1rem; }
+        .btn-nav { background: var(--sec); color: white; width: 55px; height: 55px; font-size: 1.2rem; }
         .btn-lunch { background: var(--tert); color: #492532; padding: 18px 25px; margin-top: 15px; }
         
         #settingsOverlay {
@@ -51,7 +51,6 @@
         label { display: block; font-size: 0.8rem; color: #938f99; margin-bottom: 5px; }
         input { width: 100%; background: #2b2930; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; box-sizing: border-box; }
         .close-btn { background: var(--prim); color: var(--on-prim); width: 100%; padding: 15px; margin-top: 10px; }
-        .reset-btn { background: transparent; color: #ffb4ab; width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #444; }
     </style>
 </head>
 <body>
@@ -67,10 +66,10 @@
     </div>
 
     <div class="controls">
-        <button class="btn-nav" onclick="openSettings()" title="Settings">⚙️</button>
-        <button class="btn-nav" onclick="prevSession()" title="Reset Session">⏮</button>
+        <button class="btn-nav" onclick="openSettings()">⚙️</button>
+        <button class="btn-nav" onclick="prevSession()">⏮</button>
         <button class="btn-play" id="startBtn" onclick="toggleTimer()">START</button>
-        <button class="btn-nav" onclick="nextSession()" title="Skip Session">⏭</button>
+        <button class="btn-nav" onclick="nextSession()">⏭</button>
     </div>
     
     <button class="btn-lunch" id="lunchBtn" onclick="toggleLunch()">TIFFIN / LUNCH</button>
@@ -81,28 +80,39 @@
             <div class="field"><label>Study (min)</label><input type="number" id="studyInput" value="50"></div>
             <div class="field"><label>Break (min)</label><input type="number" id="breakInput" value="10"></div>
             <div class="field"><label>Goal (hrs)</label><input type="number" id="goalInput" value="10"></div>
-            <button class="close-btn" onclick="closeSettings()">SAVE CHANGES</button>
-            <button class="reset-btn" onclick="hardReset()">RESET ALL PROGRESS</button>
+            <button class="close-btn" onclick="closeSettings()">SAVE & RESET</button>
         </div>
     </div>
 
 <script>
     let timerId = null, isPaused = true, isStudy = true, isLunch = false;
     let totalStudiedSec = parseInt(localStorage.getItem('studiedSec')) || 0;
-    
-    // NEW TIMESTAMP LOGIC
     let startTime, baseTimeLeft;
 
     const circle = document.getElementById('progCircle');
     const circumference = 2 * Math.PI * 140;
 
-    function announce(msg) { 
-        window.speechSynthesis.cancel(); 
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(msg)); 
+    // Synthesized chime sound instead of voice
+    function playChime() {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, context.currentTime); // High pitch A5
+        oscillator.frequency.exponentialRampToValueAtTime(440, context.currentTime + 0.5);
+
+        gainNode.gain.setValueAtTime(0.1, context.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.5);
     }
 
     function updateDisplay() {
-        // Calculate real time elapsed since the last "Play" click
         let effectiveTimeLeft = baseTimeLeft;
         if (!isPaused && !isLunch) {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -110,6 +120,7 @@
         }
 
         if (effectiveTimeLeft <= 0) {
+            playChime();
             nextSession();
             return;
         }
@@ -119,23 +130,15 @@
         document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         
         const studyMin = parseInt(document.getElementById('studyInput').value);
-        const goalHrs = parseInt(document.getElementById('goalInput').value);
         const maxSec = (isStudy ? studyMin : parseInt(document.getElementById('breakInput').value)) * 60;
-        
         circle.style.strokeDashoffset = circumference - (effectiveTimeLeft / maxSec) * circumference;
 
-        const goalTotalSec = goalHrs * 3600;
-        
-        // Accurate total study calculation
-        let currentSessionContribution = 0;
-        if (isStudy && !isPaused && !isLunch) {
-            currentSessionContribution = Math.floor((Date.now() - startTime) / 1000);
-        }
-        const totalWithCurrent = totalStudiedSec + currentSessionContribution;
+        let currentContribution = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        const totalWithCurrent = totalStudiedSec + currentContribution;
 
+        const goalTotalSec = parseInt(document.getElementById('goalInput').value) * 3600;
         document.getElementById('goal-text').textContent = `Goal: ${Math.min((totalWithCurrent / goalTotalSec) * 100, 100).toFixed(1)}%`;
-        const currentSessionNum = Math.floor(totalWithCurrent / (studyMin * 60)) + 1;
-        document.getElementById('sessionDisplay').textContent = `Session ${currentSessionNum} of ${Math.ceil(goalTotalSec / (studyMin * 60))}`;
+        document.getElementById('sessionDisplay').textContent = `Session ${Math.floor(totalWithCurrent / (studyMin * 60)) + 1} of ${Math.ceil(goalTotalSec / (studyMin * 60))}`;
     }
 
     function toggleTimer() {
@@ -148,12 +151,8 @@
             timerId = setInterval(updateDisplay, 1000);
         } else {
             isPaused = true;
-            // Freeze the progress into baseTimeLeft
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            if (isStudy) {
-                totalStudiedSec += elapsed;
-                localStorage.setItem('studiedSec', totalStudiedSec);
-            }
+            if (isStudy) { totalStudiedSec += elapsed; localStorage.setItem('studiedSec', totalStudiedSec); }
             baseTimeLeft -= elapsed;
             clearInterval(timerId);
             document.getElementById('startBtn').textContent = "RESUME";
@@ -162,18 +161,10 @@
 
     function nextSession() {
         const elapsed = isPaused ? 0 : Math.floor((Date.now() - startTime) / 1000);
-        if (isStudy) {
-            totalStudiedSec += elapsed;
-            localStorage.setItem('studiedSec', totalStudiedSec);
-        }
-        
+        if (isStudy) { totalStudiedSec += elapsed; localStorage.setItem('studiedSec', totalStudiedSec); }
         isStudy = !isStudy;
-        announce(isStudy ? "Break over, start session" : "Session completed, take a break");
-        
         baseTimeLeft = (isStudy ? document.getElementById('studyInput').value : document.getElementById('breakInput').value) * 60;
         startTime = Date.now();
-        
-        if (isPaused) clearInterval(timerId);
         updateDisplay();
     }
 
@@ -186,53 +177,31 @@
     function toggleLunch() {
         if (!isLunch) {
             const elapsed = isPaused ? 0 : Math.floor((Date.now() - startTime) / 1000);
-            if (isStudy) {
-                totalStudiedSec += elapsed;
-                localStorage.setItem('studiedSec', totalStudiedSec);
-            }
+            if (isStudy) { totalStudiedSec += elapsed; localStorage.setItem('studiedSec', totalStudiedSec); }
             baseTimeLeft -= elapsed;
             isLunch = true;
             document.getElementById('lunchBtn').textContent = "BACK TO WORK";
             document.getElementById('status').textContent = "LUNCH MODE";
-            announce("Lunch mode active");
         } else {
             isLunch = false;
             startTime = Date.now();
             document.getElementById('lunchBtn').textContent = "TIFFIN / LUNCH";
             document.getElementById('status').textContent = isStudy ? "STUDYING" : "BREAK";
-            announce("Welcome back");
         }
     }
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
-    
     function closeSettings() {
         document.getElementById('settingsOverlay').style.display = 'none';
-        localStorage.setItem('studyMin', document.getElementById('studyInput').value);
-        localStorage.setItem('breakMin', document.getElementById('breakInput').value);
-        localStorage.setItem('goalHrs', document.getElementById('goalInput').value);
-        if (isPaused) {
-            baseTimeLeft = document.getElementById('studyInput').value * 60;
-        }
+        isPaused = true; clearInterval(timerId);
+        document.getElementById('startBtn').textContent = "START";
+        isStudy = true;
+        baseTimeLeft = document.getElementById('studyInput').value * 60;
         updateDisplay();
-    }
-
-    function hardReset() {
-        if(confirm("Erase all progress?")) {
-            totalStudiedSec = 0;
-            localStorage.setItem('studiedSec', 0);
-            isPaused = true;
-            clearInterval(timerId);
-            baseTimeLeft = document.getElementById('studyInput').value * 60;
-            document.getElementById('startBtn').textContent = "START";
-            document.getElementById('status').textContent = "READY";
-            closeSettings();
-        }
     }
 
     window.onkeydown = (e) => { if(e.code === 'Space') { e.preventDefault(); toggleTimer(); } };
 
-    // Initial Load
     document.getElementById('studyInput').value = localStorage.getItem('studyMin') || 50;
     document.getElementById('breakInput').value = localStorage.getItem('breakMin') || 10;
     document.getElementById('goalInput').value = localStorage.getItem('goalHrs') || 10;
