@@ -1,0 +1,16 @@
+{
+  "name": "Zen Focus Study Timer",
+  "short_name": "ZenFocus",
+  "description": "A battery-efficient Material 3 study timer.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f12",
+  "theme_color": "#d0bcfe",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2523/2523471.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
