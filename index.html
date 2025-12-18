@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zen Focus v2</title>
+    <title>Zen Focus v3</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -30,7 +30,8 @@
         }
         .timer-content { text-align: center; z-index: 1; }
         .timer-text { font-size: 6rem; font-weight: 200; margin: 0; tabular-nums; }
-        .status-badge { font-size: 0.85rem; letter-spacing: 3px; color: var(--prim); font-weight: 600; margin-bottom: 5px;}
+        .status-badge { font-size: 0.8rem; letter-spacing: 2px; color: var(--prim); font-weight: 600; margin-bottom: 2px;}
+        .session-counter { font-size: 0.85rem; color: var(--prim); opacity: 0.8; margin-bottom: 5px; }
         .goal-inside { font-size: 0.9rem; color: #938f99; margin-top: 5px; }
 
         .controls { display: flex; gap: 12px; margin-top: 30px; align-items: center; }
@@ -48,8 +49,9 @@
         .settings-card { background: var(--surf); padding: 30px; border-radius: 28px; width: 320px; }
         .field { margin-bottom: 20px; text-align: left; }
         label { display: block; font-size: 0.8rem; color: #938f99; margin-bottom: 5px; }
-        input { width: 100%; background: #2b2930; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; }
+        input { width: 100%; background: #2b2930; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; box-sizing: border-box; }
         .close-btn { background: var(--prim); color: var(--on-prim); width: 100%; padding: 15px; margin-top: 10px; }
+        .reset-btn { background: transparent; color: #ffb4ab; width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #444; }
     </style>
 </head>
 <body>
@@ -57,6 +59,7 @@
     <div class="timer-wrapper">
         <svg width="300" height="300"><circle class="bg-circle" cx="150" cy="150" r="140"></circle><circle id="progCircle" class="progress-circle" cx="150" cy="150" r="140"></circle></svg>
         <div class="timer-content">
+            <div id="sessionDisplay" class="session-counter">Session 1 of 12</div>
             <div id="status" class="status-badge">READY</div>
             <h1 class="timer-text" id="timer">00:00</h1>
             <div class="goal-inside" id="goal-text">Goal: 0%</div>
@@ -78,7 +81,8 @@
             <div class="field"><label>Study (min)</label><input type="number" id="studyInput" value="50"></div>
             <div class="field"><label>Break (min)</label><input type="number" id="breakInput" value="10"></div>
             <div class="field"><label>Goal (hrs)</label><input type="number" id="goalInput" value="10"></div>
-            <button class="close-btn" onclick="closeSettings()">SAVE & RESET</button>
+            <button class="close-btn" onclick="closeSettings()">SAVE CHANGES</button>
+            <button class="reset-btn" onclick="hardReset()">RESET ALL PROGRESS</button>
         </div>
     </div>
 
@@ -100,15 +104,23 @@
         const s = Math.abs(timeLeft) % 60;
         document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         
+        const studyMin = parseInt(document.getElementById('studyInput').value);
+        const goalHrs = parseInt(document.getElementById('goalInput').value);
+        
         // Progress Circle Logic
-        const maxSec = (isStudy ? document.getElementById('studyInput').value : document.getElementById('breakInput').value) * 60;
+        const maxSec = (isStudy ? studyMin : parseInt(document.getElementById('breakInput').value)) * 60;
         const offset = circumference - (timeLeft / maxSec) * circumference;
         circle.style.strokeDashoffset = offset;
 
         // Daily Goal Logic
-        const goalTotal = document.getElementById('goalInput').value * 3600;
-        const percent = (totalStudiedSec / goalTotal) * 100;
+        const goalTotalSec = goalHrs * 3600;
+        const percent = (totalStudiedSec / goalTotalSec) * 100;
         document.getElementById('goal-text').textContent = `Goal: ${Math.min(percent, 100).toFixed(1)}%`;
+
+        // Session Counter Logic
+        const currentSessionNum = Math.floor(totalStudiedSec / (studyMin * 60)) + 1;
+        const totalSessions = Math.ceil(goalTotalSec / (studyMin * 60));
+        document.getElementById('sessionDisplay').textContent = `Session ${currentSessionNum} of ${totalSessions}`;
     }
 
     function toggleTimer() {
@@ -155,19 +167,35 @@
     
     function closeSettings() {
         document.getElementById('settingsOverlay').style.display = 'none';
-        isPaused = true;
-        clearInterval(timerId);
-        document.getElementById('startBtn').textContent = "START";
-        isStudy = true;
-        timeLeft = document.getElementById('studyInput').value * 60;
+        // Save current config to local storage
+        localStorage.setItem('studyMin', document.getElementById('studyInput').value);
+        localStorage.setItem('breakMin', document.getElementById('breakInput').value);
+        localStorage.setItem('goalHrs', document.getElementById('goalInput').value);
         updateDisplay();
     }
 
-    // Spacebar to play/pause
+    function hardReset() {
+        if(confirm("This will erase all study progress for today. Continue?")) {
+            totalStudiedSec = 0;
+            localStorage.setItem('studiedSec', 0);
+            isPaused = true;
+            clearInterval(timerId);
+            isStudy = true;
+            timeLeft = document.getElementById('studyInput').value * 60;
+            document.getElementById('startBtn').textContent = "START";
+            document.getElementById('status').textContent = "READY";
+            closeSettings();
+        }
+    }
+
     window.onkeydown = (e) => { if(e.code === 'Space') { e.preventDefault(); toggleTimer(); } };
 
-    // Initial Load
-    timeLeft = 50 * 60;
+    // Initial Load from local storage
+    document.getElementById('studyInput').value = localStorage.getItem('studyMin') || 50;
+    document.getElementById('breakInput').value = localStorage.getItem('breakMin') || 10;
+    document.getElementById('goalInput').value = localStorage.getItem('goalHrs') || 10;
+    
+    timeLeft = document.getElementById('studyInput').value * 60;
     updateDisplay();
 </script>
 </body>
