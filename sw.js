@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zen-focus-v1';
+const CACHE_NAME = 'zen-v1';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
