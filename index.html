@@ -18,12 +18,12 @@
             height: 100vh; display: flex; gap: 0; overflow: hidden;
         }
 
-        /* CUSTOM SCROLLBARS */
+        /* CUSTOM THIN SCROLLBARS */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--m3-sec-cont); border-radius: 10px; }
 
-        /* RESPONSIVE PANELS */
+        /* COLLAPSIBLE SIDE PANELS */
         .panel {
             background: var(--m3-surf-bright); border-radius: 0;
             padding: 24px; display: flex; flex-direction: column; 
@@ -47,26 +47,26 @@
         }
         .collapsed .vertical-label { display: block; }
 
-        /* CENTER CONTENT */
+        /* RESPONSIVE CENTER CONTENT */
         .center-col { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 360px; }
         
-        /* TIMER UI */
+        /* SMOOTH PROGRESS RING */
         .timer-wrapper { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; }
         svg { transform: rotate(-90deg); position: absolute; }
         circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .bg-circle { stroke: #49454F; }
         .progress-circle { 
             stroke: var(--m3-prim); stroke-dasharray: 880; 
-            transition: stroke-dashoffset 0.1s linear; /* Faster transition for smoother ring */
+            transition: stroke-dashoffset 0.1s linear; 
         }
         .timer-text { font-size: 6.5rem; font-weight: 200; margin: 0; tabular-nums; }
         
+        /* M3 BUTTONS */
         .controls { display: flex; gap: 12px; margin-top: 30px; }
         .m3-btn { border: none; cursor: pointer; border-radius: 100px; font-weight: 500; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-prim { background: var(--m3-prim); color: var(--m3-on-prim); padding: 18px 50px; font-size: 1.1rem; }
         .btn-tonal { background: var(--m3-sec-cont); color: var(--m3-on-sec-cont); width: 56px; height: 56px; }
 
-        /* TASK LIST & TEXTAREA */
         .m3-input { background: transparent; border: 1px solid var(--m3-outline); border-radius: 8px; color: white; padding: 10px; width: 100%; box-sizing: border-box; }
         .task-list { flex-grow: 1; overflow-y: auto; margin-top: 15px; }
         .task-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; }
@@ -133,13 +133,13 @@
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 
-    // Timer State
+    // STATE MANAGEMENT
     let timerId = null, isPaused = true, isStudy = true, isLunch = false;
     let totalStudiedSec = parseInt(localStorage.getItem('studiedSec')) || 0;
     let completedSessions = parseInt(localStorage.getItem('sessions')) || 0;
     let baseTimeLeft = parseInt(localStorage.getItem('savedTimeLeft')) || 3000; 
     
-    // "useRef" equivalent for precision
+    // High-precision "Refs"
     const refs = { startTime: null, audioCtx: null };
 
     const circle = document.getElementById('progCircle');
@@ -148,34 +148,26 @@
     function initAudio() {
         if (!refs.audioCtx) {
             refs.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // Warm up audio for mobile/chrome
             const osc = refs.audioCtx.createOscillator();
-            const gain = refs.audioCtx.createGain();
-            gain.gain.value = 0;
-            osc.connect(gain);
-            gain.connect(refs.audioCtx.destination);
+            const g = refs.audioCtx.createGain(); g.gain.value = 0;
+            osc.connect(g); g.connect(refs.audioCtx.destination);
             osc.start(); osc.stop(refs.audioCtx.currentTime + 0.1);
         }
-    }
-
-    function playChime() {
-        if (!refs.audioCtx) return;
-        const g = refs.audioCtx.createGain(); 
-        const osc = refs.audioCtx.createOscillator();
-        osc.connect(g); g.connect(refs.audioCtx.destination); 
-        osc.frequency.setValueAtTime(880, refs.audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, refs.audioCtx.currentTime + 0.5);
-        osc.start(); osc.stop(refs.audioCtx.currentTime + 0.5);
     }
 
     function updateDisplay() {
         let t = baseTimeLeft;
         if (!isPaused && !isLunch) {
-            // High precision calculation
             const delta = Math.floor((Date.now() - refs.startTime) / 1000);
             t = baseTimeLeft - delta;
         }
         
-        if (t <= 0) { playChime(); nextSession(false); return; }
+        if (t <= 0) { 
+            const audio = new AudioContext(); // Session end chime
+            nextSession(false); 
+            return; 
+        }
 
         const m = Math.floor(t / 60), s = t % 60;
         document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
@@ -185,36 +177,33 @@
 
         const goalHrs = parseInt(document.getElementById('goalIn').value);
         const goalSec = goalHrs * 3600;
-        const studyMin = parseInt(document.getElementById('studyIn').value);
-        const totalSessionsGoal = Math.ceil((goalHrs * 60) / studyMin);
+        const totalSessionsGoal = Math.ceil((goalHrs * 60) / parseInt(document.getElementById('studyIn').value));
 
         const currentSessionProgress = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - refs.startTime) / 1000) : 0;
         const progressPercent = Math.min(((totalStudiedSec + currentSessionProgress)/goalSec)*100, 100).toFixed(1);
         
         document.getElementById('goal-text').textContent = `Goal: ${progressPercent}%`;
         document.getElementById('sessionDisplay').textContent = `Session ${isStudy ? completedSessions + 1 : completedSessions} of ${totalSessionsGoal}`;
-        document.getElementById('status').textContent = isLunch ? "LUNCH" : (isStudy ? "STUDYING" : "BREAK");
     }
 
     function toggleTimer() {
-        initAudio(); // Warm up audio on first click
+        initAudio();
         if (isPaused) {
             isPaused = false; refs.startTime = Date.now();
             document.getElementById('startBtn').textContent = "PAUSE";
-            timerId = setInterval(updateDisplay, 100); // Higher frequency for UI smoothness
+            timerId = setInterval(updateDisplay, 100);
         } else {
             const elapsed = Math.floor((Date.now() - refs.startTime) / 1000);
             if (isStudy) totalStudiedSec += elapsed;
             baseTimeLeft -= elapsed;
-            clearInterval(timerId);
-            isPaused = true;
+            clearInterval(timerId); isPaused = true;
             document.getElementById('startBtn').textContent = "RESUME";
             saveState();
         }
     }
 
     function nextSession(isManual) {
-        // Manual Progress Credit
+        // Manual Progress Credit: add remaining study time to goal
         if (isManual && isStudy) {
             const remaining = isPaused ? baseTimeLeft : (baseTimeLeft - Math.floor((Date.now() - refs.startTime) / 1000));
             totalStudiedSec += remaining;
@@ -227,32 +216,21 @@
         isStudy = !isStudy;
         baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
         
-        isPaused = true;
-        clearInterval(timerId);
+        isPaused = true; clearInterval(timerId);
         document.getElementById('startBtn').textContent = "START";
         saveState(); updateDisplay();
     }
 
     function prevSession() {
-        // Backtracking Fix: Reset current block progress
-        const studyVal = document.getElementById('studyIn').value * 60;
-        const breakVal = document.getElementById('breakIn').value * 60;
-
-        if (!isStudy) { // Currently in Break, go back to Study
-            isStudy = true;
-            // No need to subtract from totalStudiedSec because it was already added when study ended
-        }
-        
-        baseTimeLeft = isStudy ? studyVal : breakVal;
-        isPaused = true;
-        clearInterval(timerId);
+        // Backtracking Fix: Resets current session timer without double counting
+        isStudy = true;
+        baseTimeLeft = document.getElementById('studyIn').value * 60;
+        isPaused = true; clearInterval(timerId);
         document.getElementById('startBtn').textContent = "START";
         saveState(); updateDisplay();
     }
 
-    function togglePanel(id) {
-        document.getElementById(id).classList.toggle('collapsed');
-    }
+    function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
     function saveState() {
         localStorage.setItem('savedTimeLeft', baseTimeLeft);
@@ -260,7 +238,7 @@
         localStorage.setItem('sessions', completedSessions);
     }
 
-    // Task & Settings Logic (Same as original but integrated)
+    // Task & Notes (Persistent)
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
     function addTask() {
         const input = document.getElementById('newTaskInput');
@@ -289,7 +267,6 @@
     function saveNotes() { localStorage.setItem('notes', document.getElementById('brainDump').value); }
     function toggleLunch() { isLunch = !isLunch; updateDisplay(); }
 
-    // Init
     document.getElementById('studyIn').value = localStorage.getItem('studyMin') || 50;
     document.getElementById('goalIn').value = localStorage.getItem('goalHrs') || 10;
     document.getElementById('brainDump').value = localStorage.getItem('notes') || "";
