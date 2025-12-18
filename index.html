@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zen Focus</title>
+    <title>Zen Focus v2</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -15,9 +15,10 @@
             font-family: 'Segoe UI', system-ui, sans-serif;
             margin: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center; min-height: 100vh;
+            overflow: hidden;
         }
         .timer-wrapper {
-            position: relative; width: 360px; height: 360px;
+            position: relative; width: 340px; height: 340px;
             display: flex; align-items: center; justify-content: center;
         }
         svg { transform: rotate(-90deg); position: absolute; }
@@ -25,84 +26,97 @@
         .bg-circle { stroke: #25232a; }
         .progress-circle {
             stroke: var(--prim); stroke-dasharray: 880;
-            stroke-dashoffset: 880; transition: stroke-dashoffset 1s linear;
+            stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear;
         }
         .timer-content { text-align: center; z-index: 1; }
-        .timer-text { font-size: 6.5rem; font-weight: 200; margin: 0; cursor: pointer; }
-        .status-badge { font-size: 0.85rem; letter-spacing: 3px; color: var(--prim); font-weight: 600; }
-        .goal-inside { font-size: 0.9rem; color: #938f99; margin-top: 10px; }
-        .controls { display: flex; gap: 15px; margin-top: 40px; }
-        button { border: none; cursor: pointer; border-radius: 100px; transition: 0.2s; }
-        .btn-play { background: var(--prim); color: var(--on-prim); padding: 18px 55px; font-weight: bold; }
-        .btn-lunch { background: var(--tert); color: #492532; padding: 18px 25px; font-weight: bold; }
-        .btn-icon { background: var(--sec); color: white; width: 55px; height: 55px; }
+        .timer-text { font-size: 6rem; font-weight: 200; margin: 0; tabular-nums; }
+        .status-badge { font-size: 0.85rem; letter-spacing: 3px; color: var(--prim); font-weight: 600; margin-bottom: 5px;}
+        .goal-inside { font-size: 0.9rem; color: #938f99; margin-top: 5px; }
+
+        .controls { display: flex; gap: 12px; margin-top: 30px; align-items: center; }
+        button { border: none; cursor: pointer; border-radius: 100px; transition: 0.2s; font-weight: bold;}
+        .btn-play { background: var(--prim); color: var(--on-prim); padding: 18px 45px; font-size: 1.1rem; }
+        .btn-nav { background: var(--sec); color: white; width: 50px; height: 50px; font-size: 1.2rem; }
+        .btn-lunch { background: var(--tert); color: #492532; padding: 18px 25px; margin-top: 15px; }
         
         #settingsOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: none;
+            background: rgba(0,0,0,0.95); display: none;
             justify-content: center; align-items: center; z-index: 100;
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(10px);
         }
-        .settings-card { background: var(--surf); padding: 30px; border-radius: 32px; width: 340px; max-height: 80vh; overflow-y: auto; }
-        .field { margin-bottom: 20px; }
-        input { width: 100%; background: #2b2930; border: 1px solid #444; color: white; padding: 12px; border-radius: 12px; box-sizing: border-box; }
-        .close-btn { background: var(--prim); color: var(--on-prim); width: 100%; padding: 15px; font-weight: bold; margin-top: 10px; }
+        .settings-card { background: var(--surf); padding: 30px; border-radius: 28px; width: 320px; }
+        .field { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 0.8rem; color: #938f99; margin-bottom: 5px; }
+        input { width: 100%; background: #2b2930; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; }
+        .close-btn { background: var(--prim); color: var(--on-prim); width: 100%; padding: 15px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="timer-wrapper">
-        <svg width="320" height="320"><circle class="bg-circle" cx="160" cy="160" r="140"></circle><circle id="progCircle" class="progress-circle" cx="160" cy="160" r="140"></circle></svg>
+        <svg width="300" height="300"><circle class="bg-circle" cx="150" cy="150" r="140"></circle><circle id="progCircle" class="progress-circle" cx="150" cy="150" r="140"></circle></svg>
         <div class="timer-content">
             <div id="status" class="status-badge">READY</div>
             <h1 class="timer-text" id="timer">00:00</h1>
-            <div class="goal-inside" id="goal-text">Goal: 0.0%</div>
+            <div class="goal-inside" id="goal-text">Goal: 0%</div>
         </div>
     </div>
 
     <div class="controls">
-        <button class="btn-icon" onclick="openSettings()">⚙️</button>
+        <button class="btn-nav" onclick="openSettings()" title="Settings">⚙️</button>
+        <button class="btn-nav" onclick="prevSession()" title="Reset Session">⏮</button>
         <button class="btn-play" id="startBtn" onclick="toggleTimer()">START</button>
-        <button class="btn-lunch" id="lunchBtn" onclick="toggleLunch()">TIFFIN</button>
+        <button class="btn-nav" onclick="nextSession()" title="Skip Session">⏭</button>
     </div>
+    
+    <button class="btn-lunch" id="lunchBtn" onclick="toggleLunch()">TIFFIN / LUNCH</button>
 
     <div id="settingsOverlay">
         <div class="settings-card">
-            <h2 style="color:var(--prim)">Settings</h2>
+            <h2 style="margin-top:0">Settings</h2>
             <div class="field"><label>Study (min)</label><input type="number" id="studyInput" value="50"></div>
             <div class="field"><label>Break (min)</label><input type="number" id="breakInput" value="10"></div>
-            <div class="field"><label>Daily Goal (hrs)</label><input type="number" id="goalInput" value="10"></div>
-            <button class="close-btn" onclick="closeSettings()">SAVE</button>
+            <div class="field"><label>Goal (hrs)</label><input type="number" id="goalInput" value="10"></div>
+            <button class="close-btn" onclick="closeSettings()">SAVE & RESET</button>
         </div>
     </div>
 
 <script>
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js');
-    }
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
 
     let timeLeft, timerId = null, isPaused = true, isStudy = true, isLunch = false;
     let totalStudiedSec = parseInt(localStorage.getItem('studiedSec')) || 0;
     const circle = document.getElementById('progCircle');
     const circumference = 2 * Math.PI * 140;
 
-    function announce(msg) { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(msg)); }
+    function announce(msg) { 
+        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(msg)); 
+    }
 
     function updateDisplay() {
         const m = Math.floor(Math.abs(timeLeft) / 60);
         const s = Math.abs(timeLeft) % 60;
         document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        const total = (isStudy ? document.getElementById('studyInput').value : document.getElementById('breakInput').value) * 60;
-        circle.style.strokeDashoffset = circumference - (timeLeft / total) * circumference;
-        const goal = document.getElementById('goalInput').value * 3600;
-        document.getElementById('goal-text').textContent = `Goal: ${Math.min((totalStudiedSec/goal)*100, 100).toFixed(1)}%`;
+        
+        // Progress Circle Logic
+        const maxSec = (isStudy ? document.getElementById('studyInput').value : document.getElementById('breakInput').value) * 60;
+        const offset = circumference - (timeLeft / maxSec) * circumference;
+        circle.style.strokeDashoffset = offset;
+
+        // Daily Goal Logic
+        const goalTotal = document.getElementById('goalInput').value * 3600;
+        const percent = (totalStudiedSec / goalTotal) * 100;
+        document.getElementById('goal-text').textContent = `Goal: ${Math.min(percent, 100).toFixed(1)}%`;
     }
 
     function toggleTimer() {
         if (isPaused) {
-            if (!timeLeft) timeLeft = document.getElementById('studyInput').value * 60;
-            isPaused = false; document.getElementById('startBtn').textContent = "PAUSE";
+            isPaused = false;
+            document.getElementById('startBtn').textContent = "PAUSE";
+            document.getElementById('status').textContent = isStudy ? "STUDYING" : "BREAK";
+            circle.style.stroke = isStudy ? "var(--prim)" : "var(--tert)";
             timerId = setInterval(() => {
                 if(!isLunch) {
                     timeLeft--;
@@ -112,7 +126,9 @@
                 }
             }, 1000);
         } else {
-            isPaused = true; clearInterval(timerId); document.getElementById('startBtn').textContent = "RESUME";
+            isPaused = true;
+            clearInterval(timerId);
+            document.getElementById('startBtn').textContent = "RESUME";
         }
     }
 
@@ -123,15 +139,34 @@
         updateDisplay();
     }
 
+    function prevSession() {
+        timeLeft = (isStudy ? document.getElementById('studyInput').value : document.getElementById('breakInput').value) * 60;
+        updateDisplay();
+    }
+
     function toggleLunch() {
         isLunch = !isLunch;
-        document.getElementById('lunchBtn').textContent = isLunch ? "RETURN" : "TIFFIN";
+        document.getElementById('lunchBtn').textContent = isLunch ? "BACK TO WORK" : "TIFFIN / LUNCH";
+        document.getElementById('status').textContent = isLunch ? "LUNCH MODE" : (isStudy ? "STUDYING" : "BREAK");
         announce(isLunch ? "Lunch mode active" : "Welcome back");
     }
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
-    function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; updateDisplay(); }
+    
+    function closeSettings() {
+        document.getElementById('settingsOverlay').style.display = 'none';
+        isPaused = true;
+        clearInterval(timerId);
+        document.getElementById('startBtn').textContent = "START";
+        isStudy = true;
+        timeLeft = document.getElementById('studyInput').value * 60;
+        updateDisplay();
+    }
 
+    // Spacebar to play/pause
+    window.onkeydown = (e) => { if(e.code === 'Space') { e.preventDefault(); toggleTimer(); } };
+
+    // Initial Load
     timeLeft = 50 * 60;
     updateDisplay();
 </script>
