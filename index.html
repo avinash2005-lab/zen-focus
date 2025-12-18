@@ -7,166 +7,103 @@
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
-            --m3-surface: #1C1B1F;
-            --m3-surf-bright: #2B2930;
-            --m3-prim: #D0BCFE;
-            --m3-on-prim: #381E72;
-            --m3-sec-cont: #4A4458;
-            --m3-on-sec-cont: #E8DEF8;
-            --m3-tert: #EFB8C8;
-            --m3-error: #F2B8B5;
-            --m3-outline: #938F99;
+            --m3-surface: #1C1B1F; --m3-surf-bright: #2B2930; --m3-prim: #D0BCFE;
+            --m3-on-prim: #381E72; --m3-sec-cont: #4A4458; --m3-on-sec-cont: #E8DEF8;
+            --m3-tert: #EFB8C8; --m3-outline: #938F99;
         }
 
         body {
-            background-color: var(--m3-surface);
-            color: #E6E1E5;
-            font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
+            background-color: var(--m3-surface); color: #E6E1E5;
+            font-family: 'Segoe UI', system-ui, sans-serif; margin: 0;
+            height: 100vh; display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px; padding: 20px; box-sizing: border-box;
         }
 
-        /* TIMER VISUALS */
-        .timer-wrapper {
-            position: relative;
-            width: 320px;
-            height: 320px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
+        /* LEFT & RIGHT PANELS */
+        .panel {
+            background: var(--m3-surf-bright); border-radius: 28px;
+            padding: 20px; display: flex; flex-direction: column; overflow: hidden;
         }
+        h2 { font-size: 1.1rem; font-weight: 400; color: var(--m3-prim); margin-top: 0; }
+
+        /* TASK LIST (LEFT) */
+        .task-input-row { display: flex; gap: 8px; margin-bottom: 15px; }
+        .m3-input {
+            background: transparent; border: 1px solid var(--m3-outline);
+            border-radius: 8px; color: white; padding: 10px; width: 100%; box-sizing: border-box;
+        }
+        .task-list { flex-grow: 1; overflow-y: auto; }
+        .task-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #444; }
+        .task-item.done { opacity: 0.5; text-decoration: line-through; }
+        .task-item input { margin-right: 12px; cursor: pointer; }
+
+        /* CENTER TIMER */
+        .center-col { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .timer-wrapper { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; }
         svg { transform: rotate(-90deg); position: absolute; }
         circle { fill: none; stroke-width: 8; stroke-linecap: round; }
         .bg-circle { stroke: #49454F; }
-        .progress-circle {
-            stroke: var(--m3-prim);
-            stroke-dasharray: 880;
-            stroke-dashoffset: 0;
-            transition: stroke-dashoffset 0.5s linear;
-        }
+        .progress-circle { stroke: var(--m3-prim); stroke-dasharray: 880; transition: stroke-dashoffset 0.5s linear; }
         .timer-content { text-align: center; z-index: 1; }
-        .timer-text { font-size: 5.5rem; font-weight: 200; margin: 0; tabular-nums; }
-        .status-badge { font-size: 0.8rem; letter-spacing: 2px; color: var(--m3-prim); font-weight: 600; text-transform: uppercase; }
-
-        /* TASK SECTION */
-        .task-container {
-            width: 100%;
-            max-width: 400px;
-            background: var(--m3-surf-bright);
-            padding: 16px;
-            border-radius: 24px;
-            margin-bottom: 20px;
-        }
-        .task-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .m3-input {
-            background: transparent;
-            border: 1px solid var(--m3-outline);
-            border-radius: 8px;
-            color: white;
-            padding: 12px;
-            flex-grow: 1;
-        }
-        .task-list { max-height: 120px; overflow-y: auto; }
-        .task-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #444;
-        }
-        .task-item input[type="checkbox"] { margin-right: 12px; transform: scale(1.2); cursor: pointer; }
-        .task-item.done { opacity: 0.5; text-decoration: line-through; }
-
-        /* CONTROLS */
-        .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
-        .m3-btn {
-            border: none;
-            cursor: pointer;
-            border-radius: 100px;
-            font-weight: 500;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-prim { background: var(--m3-prim); color: var(--m3-on-prim); padding: 16px 48px; font-size: 1rem; }
-        .btn-tonal { background: var(--m3-sec-cont); color: var(--m3-on-sec-cont); width: 56px; height: 56px; font-size: 1.2rem; }
-        .btn-lunch { background: var(--m3-tert); color: #492532; padding: 12px 24px; }
-
-        /* SETTINGS DIALOG (M3) */
-        #settingsOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: none;
-            justify-content: center; align-items: center; z-index: 100;
-            backdrop-filter: blur(8px);
-        }
-        .m3-dialog {
-            background: var(--m3-surf-bright);
-            padding: 24px;
-            border-radius: 28px;
-            width: 90%;
-            max-width: 360px;
-            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
-        }
-        .dialog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .field { margin-bottom: 16px; }
-        .field label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: var(--m3-outline); }
-        .save-btn { width: 100%; padding: 14px; background: var(--m3-prim); color: var(--m3-on-prim); margin-top: 10px; }
+        .timer-text { font-size: 6.5rem; font-weight: 200; margin: 0; tabular-nums; }
         
-        textarea {
-            width: 100%; max-width: 400px; height: 80px; background: var(--m3-surf-bright);
-            border: 1px solid var(--m3-outline); color: #ddd; padding: 12px; border-radius: 16px;
-            resize: none; box-sizing: border-box; margin-top: 10px;
-        }
+        .controls { display: flex; gap: 12px; margin-top: 30px; }
+        .m3-btn { border: none; cursor: pointer; border-radius: 100px; font-weight: 500; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-prim { background: var(--m3-prim); color: var(--m3-on-prim); padding: 18px 50px; font-size: 1.1rem; }
+        .btn-tonal { background: var(--m3-sec-cont); color: var(--m3-on-sec-cont); width: 56px; height: 56px; font-size: 1.2rem; }
+
+        /* BRAIN DUMP (RIGHT) */
+        textarea { flex-grow: 1; background: transparent; border: 1px solid var(--m3-outline); color: #ddd; padding: 15px; border-radius: 16px; resize: none; font-family: inherit; }
+
+        /* SETTINGS OVERLAY */
+        #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(10px); }
+        .m3-dialog { background: var(--m3-surf-bright); padding: 24px; border-radius: 28px; width: 320px; }
     </style>
 </head>
 <body>
 
-    <div class="task-container">
+    <div class="panel">
+        <h2>Subject Tasks</h2>
         <div class="task-input-row">
-            <input type="text" id="newTaskInput" class="m3-input" placeholder="Add a task/subject...">
-            <button class="m3-btn btn-prim" style="padding: 12px 20px;" onclick="addTask()">Add</button>
+            <input type="text" id="newTaskInput" class="m3-input" placeholder="New task...">
+            <button class="m3-btn btn-prim" style="padding: 10px;" onclick="addTask()">+</button>
         </div>
         <div class="task-list" id="taskList"></div>
     </div>
 
-    <div class="timer-wrapper">
-        <svg width="300" height="300"><circle class="bg-circle" cx="150" cy="150" r="140"></circle><circle id="progCircle" class="progress-circle" cx="150" cy="150" r="140"></circle></svg>
-        <div class="timer-content">
-            <div id="sessionDisplay" style="font-size: 0.85rem; color: var(--m3-prim); margin-bottom: 4px;">Session 1</div>
-            <div id="status" class="status-badge">Ready</div>
-            <h1 class="timer-text" id="timer">00:00</h1>
-            <div id="goal-text" style="font-size: 0.9rem; color: var(--m3-outline); margin-top: 4px;">Goal: 0%</div>
+    <div class="center-col">
+        <div class="timer-wrapper">
+            <svg width="300" height="300"><circle class="bg-circle" cx="150" cy="150" r="140"></circle><circle id="progCircle" class="progress-circle" cx="150" cy="150" r="140"></circle></svg>
+            <div class="timer-content">
+                <div id="sessionDisplay" style="color: var(--m3-prim); font-size: 0.9rem;">Session 1</div>
+                <div id="status" style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; margin: 5px 0;">Ready</div>
+                <h1 class="timer-text" id="timer">00:00</h1>
+                <div id="goal-text" style="color: var(--m3-outline); font-size: 0.9rem;">Goal: 0%</div>
+            </div>
         </div>
+        <div class="controls">
+            <button class="m3-btn btn-tonal" onclick="openSettings()">⚙️</button>
+            <button class="m3-btn btn-tonal" onclick="prevSession()">⏮</button>
+            <button class="m3-btn btn-prim" id="startBtn" onclick="toggleTimer()">START</button>
+            <button class="m3-btn btn-tonal" onclick="nextSession()">⏭</button>
+        </div>
+        <button class="m3-btn btn-tonal" style="margin-top:20px; padding:12px 30px; width:auto; height:auto; background:var(--m3-tert); color:#492532;" onclick="toggleLunch()">☕ TIFFIN BREAK</button>
     </div>
 
-    <div class="controls">
-        <button class="m3-btn btn-tonal" onclick="openSettings()">⚙️</button>
-        <button class="m3-btn btn-tonal" onclick="prevSession()">⏮</button>
-        <button class="m3-btn btn-prim" id="startBtn" onclick="toggleTimer()">START</button>
-        <button class="m3-btn btn-tonal" onclick="nextSession()">⏭</button>
+    <div class="panel">
+        <h2>Brain Dump</h2>
+        <textarea id="brainDump" placeholder="Distracting thoughts? Write them here..." oninput="saveNotes()"></textarea>
     </div>
-
-    <button class="m3-btn btn-lunch" id="lunchBtn" onclick="toggleLunch()">☕ TIFFIN BREAK</button>
-
-    <textarea id="brainDump" placeholder="Brain Dump: ideas, distractions, notes..." oninput="localStorage.setItem('notes', this.value)"></textarea>
 
     <div id="settingsOverlay">
         <div class="m3-dialog">
-            <div class="dialog-header">
-                <h2 style="margin:0; font-weight:400;">Timer Settings</h2>
-                <span style="cursor:pointer; font-size:1.5rem;" onclick="closeSettings()">×</span>
-            </div>
-            <div class="field"><label>Study Block (min)</label><input type="number" id="studyIn" class="m3-input" value="50"></div>
-            <div class="field"><label>Break Block (min)</label><input type="number" id="breakIn" class="m3-input" value="10"></div>
-            <div class="field"><label>Daily Goal (hrs)</label><input type="number" id="goalIn" class="m3-input" value="10"></div>
-            <button class="m3-btn btn-prim save-btn" onclick="saveSettings()">Apply Changes</button>
-            <button onclick="hardReset()" style="background:transparent; color:var(--m3-error); border:1px solid var(--m3-outline); width:100%; padding:10px; margin-top:12px; border-radius:100px;">Reset Day</button>
+            <h2 style="margin-top:0">Settings</h2>
+            <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:var(--m3-outline)">Study (min)</label><input type="number" id="studyIn" class="m3-input" value="50"></div>
+            <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:var(--m3-outline)">Break (min)</label><input type="number" id="breakIn" class="m3-input" value="10"></div>
+            <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:var(--m3-outline)">Goal (hrs)</label><input type="number" id="goalIn" class="m3-input" value="10"></div>
+            <button class="m3-btn btn-prim" style="width:100%; padding:15px;" onclick="saveSettings()">SAVE CHANGES</button>
+            <button onclick="hardReset()" style="background:transparent; color:#F2B8B5; border:1px solid #444; width:100%; margin-top:15px; padding:10px; border-radius:10px;">RESET ALL</button>
         </div>
     </div>
 
@@ -176,17 +113,16 @@
     let timerId = null, isPaused = true, isStudy = true, isLunch = false;
     let totalStudiedSec = parseInt(localStorage.getItem('studiedSec')) || 0;
     let completedSessions = parseInt(localStorage.getItem('sessions')) || 0;
-    let baseTimeLeft, startTime;
+    let baseTimeLeft = parseInt(localStorage.getItem('savedTimeLeft')) || 3000; 
+    let startTime;
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
     const circle = document.getElementById('progCircle');
     const circumference = 2 * Math.PI * 140;
 
-    // AUDIO CHIME
     function playChime() {
-        const ctx = new AudioContext(); const osc = ctx.createOscillator(); const g = ctx.createGain();
-        osc.connect(g); g.connect(ctx.destination);
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        const ctx = new AudioContext(); const g = ctx.createGain(); const osc = ctx.createOscillator();
+        osc.connect(g); g.connect(ctx.destination); osc.frequency.setValueAtTime(880, ctx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
         osc.start(); osc.stop(ctx.currentTime + 0.5);
     }
@@ -194,51 +130,35 @@
     // TASK MANAGEMENT
     function addTask() {
         const input = document.getElementById('newTaskInput');
-        if (input.value.trim() !== "") {
-            tasks.push({ text: input.value, done: false });
-            input.value = "";
-            saveTasks();
-        }
+        if (input.value.trim()) { tasks.push({ text: input.value, done: false }); input.value = ""; saveTasks(); }
     }
-
-    function toggleTask(index) {
-        tasks[index].done = !tasks[index].done;
-        saveTasks();
-    }
-
-    function saveTasks() {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        renderTasks();
-    }
-
+    function toggleTask(i) { tasks[i].done = !tasks[i].done; saveTasks(); }
+    function saveTasks() { localStorage.setItem('tasks', JSON.stringify(tasks)); renderTasks(); }
     function renderTasks() {
-        const list = document.getElementById('taskList');
-        list.innerHTML = tasks.map((task, i) => `
-            <div class="task-item ${task.done ? 'done' : ''}">
-                <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${i})">
-                <span>${task.text}</span>
-            </div>
-        `).join('');
+        document.getElementById('taskList').innerHTML = tasks.map((t, i) => `
+            <div class="task-item ${t.done ? 'done' : ''}">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${i})">
+                <span>${t.text}</span>
+            </div>`).join('');
     }
 
+    // TIMER LOGIC
     function updateDisplay() {
         let t = baseTimeLeft;
         if (!isPaused && !isLunch) t -= Math.floor((Date.now() - startTime) / 1000);
+        
         if (t <= 0) { playChime(); nextSession(); return; }
 
         const m = Math.floor(t / 60), s = t % 60;
-        const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        document.getElementById('timer').textContent = timeStr;
-        document.title = `${timeStr} - Focus`;
+        document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        
+        const max = (isStudy ? parseInt(document.getElementById('studyIn').value) : parseInt(document.getElementById('breakIn').value)) * 60;
+        circle.style.strokeDashoffset = circumference - (t / max) * circumference;
 
-        const studyMin = parseInt(document.getElementById('studyIn').value);
-        const goalSec = parseInt(document.getElementById('goalIn').value) * 3600;
+        const goal = parseInt(document.getElementById('goalIn').value) * 3600;
         const currentContrib = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - startTime) / 1000) : 0;
-        const total = totalStudiedSec + currentContrib;
-
-        circle.style.strokeDashoffset = circumference - (t / ((isStudy ? studyMin : parseInt(document.getElementById('breakIn').value)) * 60)) * circumference;
-        document.getElementById('goal-text').textContent = `Goal: ${Math.min((total/goalSec)*100, 100).toFixed(1)}%`;
-        document.getElementById('sessionDisplay').textContent = `Session ${isStudy ? completedSessions + 1 : completedSessions} of ${Math.ceil(goalSec/(studyMin*60))}`;
+        document.getElementById('goal-text').textContent = `Goal: ${Math.min(((totalStudiedSec + currentContrib)/goal)*100, 100).toFixed(1)}%`;
+        document.getElementById('sessionDisplay').textContent = `Session ${isStudy ? completedSessions + 1 : completedSessions}`;
     }
 
     function toggleTimer() {
@@ -247,33 +167,45 @@
             document.getElementById('startBtn').textContent = "PAUSE";
             timerId = setInterval(updateDisplay, 1000);
         } else {
-            isPaused = true; const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            if(isStudy) { totalStudiedSec += elapsed; localStorage.setItem('studiedSec', totalStudiedSec); }
-            baseTimeLeft -= elapsed; clearInterval(timerId);
-            document.getElementById('startBtn').textContent = "RESUME";
+            stopTimer();
         }
+    }
+
+    function stopTimer() {
+        isPaused = true; 
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        if (isStudy) totalStudiedSec += elapsed;
+        baseTimeLeft -= elapsed;
+        clearInterval(timerId);
+        document.getElementById('startBtn').textContent = "RESUME";
+        saveState();
     }
 
     function nextSession() {
         const elapsed = isPaused ? 0 : Math.floor((Date.now() - startTime) / 1000);
-        if(isStudy) {
-            totalStudiedSec += elapsed; completedSessions++;
-            localStorage.setItem('studiedSec', totalStudiedSec);
-            localStorage.setItem('sessions', completedSessions);
-        }
-        isStudy = !isStudy; baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
-        startTime = Date.now(); updateDisplay();
+        if (isStudy) { totalStudiedSec += elapsed; completedSessions++; }
+        isStudy = !isStudy;
+        baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
+        startTime = Date.now();
+        saveState(); updateDisplay();
     }
 
     function prevSession() {
         baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
-        startTime = Date.now(); updateDisplay();
+        startTime = Date.now();
+        saveState(); updateDisplay();
+    }
+
+    function saveState() {
+        localStorage.setItem('savedTimeLeft', baseTimeLeft);
+        localStorage.setItem('studiedSec', totalStudiedSec);
+        localStorage.setItem('sessions', completedSessions);
     }
 
     function toggleLunch() {
         isLunch = !isLunch;
         document.getElementById('status').textContent = isLunch ? "LUNCH" : (isStudy ? "STUDYING" : "BREAK");
-        if(isLunch && !isPaused) toggleTimer();
+        if (isLunch && !isPaused) stopTimer();
     }
 
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
@@ -282,19 +214,18 @@
         localStorage.setItem('studyMin', document.getElementById('studyIn').value);
         localStorage.setItem('goalHrs', document.getElementById('goalIn').value);
         baseTimeLeft = document.getElementById('studyIn').value * 60;
-        isPaused = true; clearInterval(timerId); document.getElementById('startBtn').textContent = "START";
-        updateDisplay(); closeSettings();
+        isPaused = true; clearInterval(timerId);
+        document.getElementById('startBtn').textContent = "START";
+        saveState(); updateDisplay(); closeSettings();
     }
+    function hardReset() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
+    function saveNotes() { localStorage.setItem('notes', document.getElementById('brainDump').value); }
 
-    function hardReset() { if(confirm("Reset Day?")) { localStorage.clear(); location.reload(); } }
-
-    // Init
+    // INITIALIZE
     document.getElementById('studyIn').value = localStorage.getItem('studyMin') || 50;
     document.getElementById('goalIn').value = localStorage.getItem('goalHrs') || 10;
     document.getElementById('brainDump').value = localStorage.getItem('notes') || "";
-    baseTimeLeft = document.getElementById('studyIn').value * 60;
-    renderTasks();
-    updateDisplay();
+    renderTasks(); updateDisplay();
 </script>
 </body>
 </html>
