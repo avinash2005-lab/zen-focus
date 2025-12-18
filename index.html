@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zen Station M3</title>
+    <title>Zen Focus M3 Pro</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -15,119 +15,253 @@
         body {
             background-color: var(--m3-surface); color: #E6E1E5;
             font-family: 'Segoe UI', system-ui, sans-serif; margin: 0;
-            height: 100vh; display: grid;
-            grid-template-columns: 300px 1fr 300px;
-            gap: 20px; padding: 20px; box-sizing: border-box;
+            height: 100vh; display: flex; gap: 0; overflow: hidden;
         }
 
-        /* LEFT & RIGHT PANELS */
+        /* CUSTOM SCROLLBARS */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--m3-sec-cont); border-radius: 10px; }
+
+        /* RESPONSIVE PANELS */
         .panel {
-            background: var(--m3-surf-bright); border-radius: 28px;
-            padding: 20px; display: flex; flex-direction: column; overflow: hidden;
+            background: var(--m3-surf-bright); border-radius: 0;
+            padding: 24px; display: flex; flex-direction: column; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 300px; position: relative; border-left: 1px solid #333; border-right: 1px solid #333;
         }
-        h2 { font-size: 1.1rem; font-weight: 400; color: var(--m3-prim); margin-top: 0; }
-
-        /* TASK LIST (LEFT) */
-        .task-input-row { display: flex; gap: 8px; margin-bottom: 15px; }
-        .m3-input {
-            background: transparent; border: 1px solid var(--m3-outline);
-            border-radius: 8px; color: white; padding: 10px; width: 100%; box-sizing: border-box;
+        .panel.collapsed { width: 48px; padding: 20px 0; align-items: center; overflow: hidden; }
+        .panel-content { transition: opacity 0.2s; opacity: 1; height: 100%; display: flex; flex-direction: column; }
+        .collapsed .panel-content { opacity: 0; pointer-events: none; }
+        
+        .toggle-btn {
+            position: absolute; top: 15px; right: 10px; background: transparent; 
+            border: none; color: var(--m3-outline); cursor: pointer; z-index: 10;
         }
-        .task-list { flex-grow: 1; overflow-y: auto; }
-        .task-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #444; }
-        .task-item.done { opacity: 0.5; text-decoration: line-through; }
-        .task-item input { margin-right: 12px; cursor: pointer; }
+        .collapsed .toggle-btn { right: auto; left: 50%; transform: translateX(-50%) rotate(180deg); }
 
-        /* CENTER TIMER */
-        .center-col { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .vertical-label {
+            position: absolute; top: 100px; transform: rotate(90deg); white-space: nowrap;
+            color: var(--m3-outline); font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 2px; display: none;
+        }
+        .collapsed .vertical-label { display: block; }
+
+        /* CENTER CONTENT */
+        .center-col { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 360px; }
+        
+        /* TIMER UI */
         .timer-wrapper { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; }
         svg { transform: rotate(-90deg); position: absolute; }
-        circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+        circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .bg-circle { stroke: #49454F; }
-        .progress-circle { stroke: var(--m3-prim); stroke-dasharray: 880; transition: stroke-dashoffset 0.5s linear; }
-        .timer-content { text-align: center; z-index: 1; }
+        .progress-circle { 
+            stroke: var(--m3-prim); stroke-dasharray: 880; 
+            transition: stroke-dashoffset 0.1s linear; /* Faster transition for smoother ring */
+        }
         .timer-text { font-size: 6.5rem; font-weight: 200; margin: 0; tabular-nums; }
         
         .controls { display: flex; gap: 12px; margin-top: 30px; }
         .m3-btn { border: none; cursor: pointer; border-radius: 100px; font-weight: 500; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-prim { background: var(--m3-prim); color: var(--m3-on-prim); padding: 18px 50px; font-size: 1.1rem; }
-        .btn-tonal { background: var(--m3-sec-cont); color: var(--m3-on-sec-cont); width: 56px; height: 56px; font-size: 1.2rem; }
+        .btn-tonal { background: var(--m3-sec-cont); color: var(--m3-on-sec-cont); width: 56px; height: 56px; }
 
-        /* BRAIN DUMP (RIGHT) */
+        /* TASK LIST & TEXTAREA */
+        .m3-input { background: transparent; border: 1px solid var(--m3-outline); border-radius: 8px; color: white; padding: 10px; width: 100%; box-sizing: border-box; }
+        .task-list { flex-grow: 1; overflow-y: auto; margin-top: 15px; }
+        .task-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; }
+        .task-item.done { opacity: 0.4; text-decoration: line-through; }
         textarea { flex-grow: 1; background: transparent; border: 1px solid var(--m3-outline); color: #ddd; padding: 15px; border-radius: 16px; resize: none; font-family: inherit; }
 
-        /* SETTINGS OVERLAY */
         #settingsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(10px); }
-        .m3-dialog { background: var(--m3-surf-bright); padding: 24px; border-radius: 28px; width: 320px; }
     </style>
 </head>
 <body>
 
-    <div class="panel">
-        <h2>Subject Tasks</h2>
-        <div class="task-input-row">
-            <input type="text" id="newTaskInput" class="m3-input" placeholder="New task...">
-            <button class="m3-btn btn-prim" style="padding: 10px;" onclick="addTask()">+</button>
+    <div class="panel" id="taskPanel">
+        <button class="toggle-btn" onclick="togglePanel('taskPanel')">◀</button>
+        <span class="vertical-label">TASKS</span>
+        <div class="panel-content">
+            <h2 style="font-weight: 400; color: var(--m3-prim);">Subject Tasks</h2>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="newTaskInput" class="m3-input" placeholder="New task...">
+                <button class="m3-btn btn-prim" style="padding: 10px; border-radius: 12px;" onclick="addTask()">+</button>
+            </div>
+            <div class="task-list" id="taskList"></div>
         </div>
-        <div class="task-list" id="taskList"></div>
     </div>
 
     <div class="center-col">
         <div class="timer-wrapper">
             <svg width="300" height="300"><circle class="bg-circle" cx="150" cy="150" r="140"></circle><circle id="progCircle" class="progress-circle" cx="150" cy="150" r="140"></circle></svg>
-            <div class="timer-content">
-                <div id="sessionDisplay" style="color: var(--m3-prim); font-size: 0.9rem;">Session 1</div>
-                <div id="status" style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; margin: 5px 0;">Ready</div>
+            <div style="text-align: center; z-index: 1;">
+                <div id="sessionDisplay" style="color: var(--m3-prim); font-size: 0.9rem;">Session 1 of 12</div>
+                <div id="status" style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; margin: 5px 0; color: var(--m3-outline);">READY</div>
                 <h1 class="timer-text" id="timer">00:00</h1>
                 <div id="goal-text" style="color: var(--m3-outline); font-size: 0.9rem;">Goal: 0%</div>
             </div>
         </div>
         <div class="controls">
             <button class="m3-btn btn-tonal" onclick="openSettings()">⚙️</button>
-            <button class="m3-btn btn-tonal" onclick="prevSession()">⏮</button>
+            <button class="m3-btn btn-tonal" title="Reset Session" onclick="prevSession()">⏮</button>
             <button class="m3-btn btn-prim" id="startBtn" onclick="toggleTimer()">START</button>
-            <button class="m3-btn btn-tonal" onclick="nextSession()">⏭</button>
+            <button class="m3-btn btn-tonal" title="Skip to Next" onclick="nextSession(true)">⏭</button>
         </div>
         <button class="m3-btn btn-tonal" style="margin-top:20px; padding:12px 30px; width:auto; height:auto; background:var(--m3-tert); color:#492532;" onclick="toggleLunch()">☕ TIFFIN BREAK</button>
     </div>
 
-    <div class="panel">
-        <h2>Brain Dump</h2>
-        <textarea id="brainDump" placeholder="Distracting thoughts? Write them here..." oninput="saveNotes()"></textarea>
+    <div class="panel" id="brainPanel">
+        <button class="toggle-btn" onclick="togglePanel('brainPanel')">▶</button>
+        <span class="vertical-label">BRAIN DUMP</span>
+        <div class="panel-content">
+            <h2 style="font-weight: 400; color: var(--m3-prim);">Brain Dump</h2>
+            <textarea id="brainDump" placeholder="Distracting thoughts?..." oninput="saveNotes()"></textarea>
+        </div>
     </div>
 
     <div id="settingsOverlay">
-        <div class="m3-dialog">
-            <h2 style="margin-top:0">Settings</h2>
+        <div style="background: var(--m3-surf-bright); padding: 24px; border-radius: 28px; width: 320px;">
+            <h2 style="margin:0 0 20px 0">Settings</h2>
             <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:var(--m3-outline)">Study (min)</label><input type="number" id="studyIn" class="m3-input" value="50"></div>
             <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:var(--m3-outline)">Break (min)</label><input type="number" id="breakIn" class="m3-input" value="10"></div>
             <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:var(--m3-outline)">Goal (hrs)</label><input type="number" id="goalIn" class="m3-input" value="10"></div>
             <button class="m3-btn btn-prim" style="width:100%; padding:15px;" onclick="saveSettings()">SAVE CHANGES</button>
-            <button onclick="hardReset()" style="background:transparent; color:#F2B8B5; border:1px solid #444; width:100%; margin-top:15px; padding:10px; border-radius:10px;">RESET ALL</button>
+            <button onclick="hardReset()" style="background:transparent; color:#F2B8B5; border:1px solid #444; width:100%; margin-top:15px; padding:10px; border-radius:10px; cursor:pointer;">RESET ALL</button>
         </div>
     </div>
 
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 
+    // Timer State
     let timerId = null, isPaused = true, isStudy = true, isLunch = false;
     let totalStudiedSec = parseInt(localStorage.getItem('studiedSec')) || 0;
     let completedSessions = parseInt(localStorage.getItem('sessions')) || 0;
     let baseTimeLeft = parseInt(localStorage.getItem('savedTimeLeft')) || 3000; 
-    let startTime;
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    
+    // "useRef" equivalent for precision
+    const refs = { startTime: null, audioCtx: null };
 
     const circle = document.getElementById('progCircle');
     const circumference = 2 * Math.PI * 140;
 
-    function playChime() {
-        const ctx = new AudioContext(); const g = ctx.createGain(); const osc = ctx.createOscillator();
-        osc.connect(g); g.connect(ctx.destination); osc.frequency.setValueAtTime(880, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-        osc.start(); osc.stop(ctx.currentTime + 0.5);
+    function initAudio() {
+        if (!refs.audioCtx) {
+            refs.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = refs.audioCtx.createOscillator();
+            const gain = refs.audioCtx.createGain();
+            gain.gain.value = 0;
+            osc.connect(gain);
+            gain.connect(refs.audioCtx.destination);
+            osc.start(); osc.stop(refs.audioCtx.currentTime + 0.1);
+        }
     }
 
-    // TASK MANAGEMENT
+    function playChime() {
+        if (!refs.audioCtx) return;
+        const g = refs.audioCtx.createGain(); 
+        const osc = refs.audioCtx.createOscillator();
+        osc.connect(g); g.connect(refs.audioCtx.destination); 
+        osc.frequency.setValueAtTime(880, refs.audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, refs.audioCtx.currentTime + 0.5);
+        osc.start(); osc.stop(refs.audioCtx.currentTime + 0.5);
+    }
+
+    function updateDisplay() {
+        let t = baseTimeLeft;
+        if (!isPaused && !isLunch) {
+            // High precision calculation
+            const delta = Math.floor((Date.now() - refs.startTime) / 1000);
+            t = baseTimeLeft - delta;
+        }
+        
+        if (t <= 0) { playChime(); nextSession(false); return; }
+
+        const m = Math.floor(t / 60), s = t % 60;
+        document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        
+        const currentLimit = (isStudy ? parseInt(document.getElementById('studyIn').value) : parseInt(document.getElementById('breakIn').value)) * 60;
+        circle.style.strokeDashoffset = circumference - (t / currentLimit) * circumference;
+
+        const goalHrs = parseInt(document.getElementById('goalIn').value);
+        const goalSec = goalHrs * 3600;
+        const studyMin = parseInt(document.getElementById('studyIn').value);
+        const totalSessionsGoal = Math.ceil((goalHrs * 60) / studyMin);
+
+        const currentSessionProgress = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - refs.startTime) / 1000) : 0;
+        const progressPercent = Math.min(((totalStudiedSec + currentSessionProgress)/goalSec)*100, 100).toFixed(1);
+        
+        document.getElementById('goal-text').textContent = `Goal: ${progressPercent}%`;
+        document.getElementById('sessionDisplay').textContent = `Session ${isStudy ? completedSessions + 1 : completedSessions} of ${totalSessionsGoal}`;
+        document.getElementById('status').textContent = isLunch ? "LUNCH" : (isStudy ? "STUDYING" : "BREAK");
+    }
+
+    function toggleTimer() {
+        initAudio(); // Warm up audio on first click
+        if (isPaused) {
+            isPaused = false; refs.startTime = Date.now();
+            document.getElementById('startBtn').textContent = "PAUSE";
+            timerId = setInterval(updateDisplay, 100); // Higher frequency for UI smoothness
+        } else {
+            const elapsed = Math.floor((Date.now() - refs.startTime) / 1000);
+            if (isStudy) totalStudiedSec += elapsed;
+            baseTimeLeft -= elapsed;
+            clearInterval(timerId);
+            isPaused = true;
+            document.getElementById('startBtn').textContent = "RESUME";
+            saveState();
+        }
+    }
+
+    function nextSession(isManual) {
+        // Manual Progress Credit
+        if (isManual && isStudy) {
+            const remaining = isPaused ? baseTimeLeft : (baseTimeLeft - Math.floor((Date.now() - refs.startTime) / 1000));
+            totalStudiedSec += remaining;
+        } else if (!isPaused) {
+            const elapsed = Math.floor((Date.now() - refs.startTime) / 1000);
+            if (isStudy) totalStudiedSec += elapsed;
+        }
+
+        if (isStudy) completedSessions++;
+        isStudy = !isStudy;
+        baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
+        
+        isPaused = true;
+        clearInterval(timerId);
+        document.getElementById('startBtn').textContent = "START";
+        saveState(); updateDisplay();
+    }
+
+    function prevSession() {
+        // Backtracking Fix: Reset current block progress
+        const studyVal = document.getElementById('studyIn').value * 60;
+        const breakVal = document.getElementById('breakIn').value * 60;
+
+        if (!isStudy) { // Currently in Break, go back to Study
+            isStudy = true;
+            // No need to subtract from totalStudiedSec because it was already added when study ended
+        }
+        
+        baseTimeLeft = isStudy ? studyVal : breakVal;
+        isPaused = true;
+        clearInterval(timerId);
+        document.getElementById('startBtn').textContent = "START";
+        saveState(); updateDisplay();
+    }
+
+    function togglePanel(id) {
+        document.getElementById(id).classList.toggle('collapsed');
+    }
+
+    function saveState() {
+        localStorage.setItem('savedTimeLeft', baseTimeLeft);
+        localStorage.setItem('studiedSec', totalStudiedSec);
+        localStorage.setItem('sessions', completedSessions);
+    }
+
+    // Task & Settings Logic (Same as original but integrated)
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
     function addTask() {
         const input = document.getElementById('newTaskInput');
         if (input.value.trim()) { tasks.push({ text: input.value, done: false }); input.value = ""; saveTasks(); }
@@ -142,86 +276,20 @@
             </div>`).join('');
     }
 
-    // TIMER LOGIC
-    function updateDisplay() {
-        let t = baseTimeLeft;
-        if (!isPaused && !isLunch) t -= Math.floor((Date.now() - startTime) / 1000);
-        
-        if (t <= 0) { playChime(); nextSession(); return; }
-
-        const m = Math.floor(t / 60), s = t % 60;
-        document.getElementById('timer').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        
-        const max = (isStudy ? parseInt(document.getElementById('studyIn').value) : parseInt(document.getElementById('breakIn').value)) * 60;
-        circle.style.strokeDashoffset = circumference - (t / max) * circumference;
-
-        const goal = parseInt(document.getElementById('goalIn').value) * 3600;
-        const currentContrib = (isStudy && !isPaused && !isLunch) ? Math.floor((Date.now() - startTime) / 1000) : 0;
-        document.getElementById('goal-text').textContent = `Goal: ${Math.min(((totalStudiedSec + currentContrib)/goal)*100, 100).toFixed(1)}%`;
-        document.getElementById('sessionDisplay').textContent = `Session ${isStudy ? completedSessions + 1 : completedSessions}`;
-    }
-
-    function toggleTimer() {
-        if (isPaused) {
-            isPaused = false; startTime = Date.now();
-            document.getElementById('startBtn').textContent = "PAUSE";
-            timerId = setInterval(updateDisplay, 1000);
-        } else {
-            stopTimer();
-        }
-    }
-
-    function stopTimer() {
-        isPaused = true; 
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        if (isStudy) totalStudiedSec += elapsed;
-        baseTimeLeft -= elapsed;
-        clearInterval(timerId);
-        document.getElementById('startBtn').textContent = "RESUME";
-        saveState();
-    }
-
-    function nextSession() {
-        const elapsed = isPaused ? 0 : Math.floor((Date.now() - startTime) / 1000);
-        if (isStudy) { totalStudiedSec += elapsed; completedSessions++; }
-        isStudy = !isStudy;
-        baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
-        startTime = Date.now();
-        saveState(); updateDisplay();
-    }
-
-    function prevSession() {
-        baseTimeLeft = (isStudy ? document.getElementById('studyIn').value : document.getElementById('breakIn').value) * 60;
-        startTime = Date.now();
-        saveState(); updateDisplay();
-    }
-
-    function saveState() {
-        localStorage.setItem('savedTimeLeft', baseTimeLeft);
-        localStorage.setItem('studiedSec', totalStudiedSec);
-        localStorage.setItem('sessions', completedSessions);
-    }
-
-    function toggleLunch() {
-        isLunch = !isLunch;
-        document.getElementById('status').textContent = isLunch ? "LUNCH" : (isStudy ? "STUDYING" : "BREAK");
-        if (isLunch && !isPaused) stopTimer();
-    }
-
     function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; }
-    function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
     function saveSettings() {
         localStorage.setItem('studyMin', document.getElementById('studyIn').value);
         localStorage.setItem('goalHrs', document.getElementById('goalIn').value);
         baseTimeLeft = document.getElementById('studyIn').value * 60;
         isPaused = true; clearInterval(timerId);
         document.getElementById('startBtn').textContent = "START";
-        saveState(); updateDisplay(); closeSettings();
+        saveState(); updateDisplay(); document.getElementById('settingsOverlay').style.display = 'none';
     }
     function hardReset() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
     function saveNotes() { localStorage.setItem('notes', document.getElementById('brainDump').value); }
+    function toggleLunch() { isLunch = !isLunch; updateDisplay(); }
 
-    // INITIALIZE
+    // Init
     document.getElementById('studyIn').value = localStorage.getItem('studyMin') || 50;
     document.getElementById('goalIn').value = localStorage.getItem('goalHrs') || 10;
     document.getElementById('brainDump').value = localStorage.getItem('notes') || "";
